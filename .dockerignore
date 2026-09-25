@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dockerignore
+.DS_Store
+.env*
+inc/config.php
+uploads/*
+sql
+docker-compose*.yml
+README.md

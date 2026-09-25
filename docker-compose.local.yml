@@ -1,0 +1,14 @@
+# Desarrollo local, con datos de demostración ficticios:
+#   DB_PASSWORD=local docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+# Sitio en http://localhost:8090 · admin RUT 11.111.111-1 / miembro RUT 22.222.222-2 · clave demo1234
+# Para empezar de cero (borra la base local): agrega "down -v" en vez de "up".
+services:
+  web:
+    ports:
+      - "8090:80"
+    volumes:
+      - .:/var/www/html          # el código se edita en vivo, sin reconstruir
+      - uploads:/var/www/html/uploads
+  db:
+    volumes:
+      - ./sql/demo/2-demo.sql:/docker-entrypoint-initdb.d/2-demo.sql:ro

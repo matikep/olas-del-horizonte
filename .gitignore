@@ -1,0 +1,14 @@
+# Configuración con claves
+inc/config.php
+.env
+.env.*
+
+# Datos personales de socios: NO van al repositorio (se cargan directo en el servidor)
+sql/2-datos.sql
+sql/NOTAS-DATOS.md
+uploads/*
+!uploads/.htaccess
+
+.DS_Store
+# Logo original del comité (no se usa en el código)
+assets/logo.jpeg

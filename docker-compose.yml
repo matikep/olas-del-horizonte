@@ -1,0 +1,41 @@
+# Despliegue con Docker Compose (Coolify u otro servidor).
+# Variables requeridas: DB_PASSWORD. En Coolify, activa TRUST_PROXY=1 (va detrás de Traefik).
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_NAME: comite
+      DB_USER: comite
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+    volumes:
+      - uploads:/var/www/html/uploads
+    expose:
+      - "80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: comite
+      MARIADB_USER: comite
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - db-data:/var/lib/mysql
+      # Crea las tablas solo la primera vez (base vacía). Los datos de socios se importan aparte (ver README).
+      - ./sql/1-schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  uploads:
+  db-data:
