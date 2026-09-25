@@ -47,9 +47,34 @@ El repositorio trae `Dockerfile` y `docker-compose.yml`, con la web (PHP 8.2 + A
 
    Si ya existe algún socio en la base, importa `2-datos.sql` antes de usar el sitio: el archivo trae IDs fijos y chocaría con los registros existentes.
 6. **Admin:** entra a `https://tu-dominio/instalar.php`, pon el RUT del presidente y una clave. `instalar.php` se desactiva solo en cuanto existe un admin con clave.
-7. **Respaldos:** en Coolify, activa los *Scheduled Backups* del volumen de la base. Respalda también el volumen `uploads`.
 
-Los volúmenes `db-data` (base de datos) y `uploads` (documentos) se mantienen entre despliegues.
+### Persistencia de datos y documentos
+
+Los datos viven en dos **volúmenes con nombre**, fuera de los contenedores:
+
+| Volumen | Contenido |
+|---|---|
+| `db-data` | La base de datos: socios, pagos, asistencia, fichas… |
+| `uploads` | Todos los archivos adjuntos: actas, cédulas, cartolas RSH, declaraciones… |
+
+- **Qué los conserva:** sobreviven a redeploys (aunque se reconstruya la imagen), reinicios y actualizaciones del servidor. Se probó recreando los contenedores y los documentos siguieron idénticos.
+- **Dónde verlos:** en Coolify aparecen en la pestaña *Persistent Storage* del recurso, con el prefijo del proyecto.
+- **Qué los borra:** eliminar el recurso en Coolify marcando la opción de borrar volúmenes, o ejecutar `docker compose down -v`.
+- **No les cambies el nombre** en `docker-compose.yml`. Coolify crearía volúmenes nuevos y vacíos, y el sitio aparecería sin datos. Los antiguos seguirían en el servidor, pero desconectados.
+- **Sobre `sql/1-schema.sql`:** crea las tablas solo cuando el volumen de la base está vacío, es decir, la primera vez. Un redeploy nunca reinicia la base.
+
+### Respaldos
+
+Los volúmenes persisten, pero no protegen de un disco dañado ni de un borrado por error. Respalda periódicamente, desde el servidor:
+
+```bash
+# Base de datos (contenedores: ver `docker ps` o el recurso en Coolify)
+docker exec <contenedor-db> sh -c 'mariadb-dump -ucomite -p"$MARIADB_PASSWORD" comite' | gzip > respaldo-$(date +%F).sql.gz
+# Documentos adjuntos
+docker exec <contenedor-web> tar czf - -C /var/www/html uploads > uploads-$(date +%F).tar.gz
+```
+
+Guarda las copias **fuera del servidor**, por ejemplo en tu computador o en otro almacenamiento, y automatízalo con `cron` en el servidor. Para restaurar se usan los mismos comandos del paso 5.
 
 ## Instalación en hosting compartido (cPanel)
 

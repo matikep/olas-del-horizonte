@@ -1,0 +1,4 @@
+# La imagen de la base solo necesita el esquema (nunca enviar datos de socios al build)
+*
+!Dockerfile
+!1-schema.sql

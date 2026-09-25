@@ -1,5 +1,7 @@
 # Despliegue con Docker Compose (Coolify u otro servidor).
 # Variables requeridas: DB_PASSWORD. En Coolify, activa TRUST_PROXY=1 (va detrás de Traefik).
+# Persistencia: los volúmenes "uploads" (documentos adjuntos) y "db-data" (base de datos) sobreviven a
+# redeploys y reinicios. No les cambies el nombre: Coolify crearía volúmenes nuevos y vacíos.
 services:
   web:
     build: .
@@ -19,7 +21,7 @@ services:
         condition: service_healthy
 
   db:
-    image: mariadb:10.11
+    build: ./sql            # MariaDB 10.11 + esquema (sql/Dockerfile)
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: comite
@@ -27,9 +29,8 @@ services:
       MARIADB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
       MARIADB_RANDOM_ROOT_PASSWORD: "1"
     volumes:
+      # Las tablas se crean solo la primera vez (volumen vacío). Los datos de socios se importan aparte (ver README).
       - db-data:/var/lib/mysql
-      # Crea las tablas solo la primera vez (base vacía). Los datos de socios se importan aparte (ver README).
-      - ./sql/1-schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
