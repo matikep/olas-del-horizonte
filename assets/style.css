@@ -305,6 +305,8 @@ td.acc form { display: inline; }
 .alerta-ok .alerta-ico { background: var(--oliva); }
 .alerta-nombres { font-size: .85rem !important; }
 .alerta-nombres a { color: var(--azul) !important; }
+.composicion details summary { font-weight: 500; font-size: .88rem; }
+.composicion details { font-size: .88rem; }
 .nav-contador { display: inline-grid; place-items: center; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem; margin-left: .35rem; border-radius: 99px; background: var(--rojo); color: #fff; font: 700 .72rem var(--f-texto); vertical-align: middle; }
 .revision-rsh { background: var(--fondo); border-radius: var(--radio-s); padding: .8rem 1rem; margin: 1rem 0; }
 .revision-rsh .grid-form { margin-top: .5rem; }

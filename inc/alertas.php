@@ -117,6 +117,25 @@ function alertas_acceso(array $socios): array
     return $out;
 }
 
+// Composición del grupo (socios activos): nacionalidad × tramo RSH y distribución por tramo.
+function composicion_grupo(): array
+{
+    $fichas = [];
+    foreach (q('SELECT * FROM postulaciones WHERE usuario_id IS NOT NULL')->fetchAll() as $f) $fichas[$f['usuario_id']] = $f;
+    $grupos = ['chileno' => 'Chilenos', 'extranjero' => 'Extranjeros (residencia definitiva)', '' => 'Sin ficha / sin dato'];
+    $filas = array_map(fn() => ['total' => 0, 't40' => 0, 't50_90' => 0, 'sobre90' => 0, 'sin_revisar' => 0], $grupos);
+    $porTramo = array_fill_keys(array_keys(TRAMOS_RSH), []);
+    foreach (q('SELECT id, nombre FROM usuarios WHERE activo = 1 ORDER BY nombre')->fetchAll() as $s) {
+        $f = $fichas[$s['id']] ?? null;
+        $g = $f['nacionalidad'] ?? '';
+        $t = (int)($f['tramo_rsh'] ?? 0);
+        $filas[$g]['total']++;
+        $filas[$g][match (true) { $t === 0 => 'sin_revisar', $t === 40 => 't40', $t <= 90 => 't50_90', default => 'sobre90' }]++;
+        if ($t) $porTramo[$t][$s['id']] = $s['nombre'];
+    }
+    return ['grupos' => $grupos, 'filas' => $filas, 'porTramo' => $porTramo];
+}
+
 // Todas las alertas de la directiva, de más a menos grave. Se calcula una vez por visita.
 function alertas_admin(): array
 {
