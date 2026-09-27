@@ -290,6 +290,12 @@ td.acc form { display: inline; }
 @keyframes crecer { from { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .barra i { animation: none; } }
 .card.pago { border-left: 5px solid var(--azul); }
+.resumen-form { background: var(--fondo); border-radius: var(--radio-s); padding: .9rem 1.1rem; margin-bottom: 1rem; }
+.resumen-form p { margin: 0; }
+.filtros { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.filtros a { padding: .35rem .8rem; border-radius: 99px; font-size: .85rem; font-weight: 600; text-decoration: none; color: var(--azul); box-shadow: inset 0 0 0 1.5px var(--linea); transition: background var(--rapido); }
+.filtros a:hover { background: var(--papel); }
+.filtros a[aria-current] { background: var(--azul); color: #fff; box-shadow: none; }
 .zona-peligro { margin-top: 1.5rem; border: 1.5px solid var(--rojo-bg); border-radius: var(--radio-s); padding: .7rem 1rem; }
 .zona-peligro summary { color: var(--rojo); }
 .zona-peligro[open] { background: #fff8f7; border-color: var(--rojo); }

@@ -159,7 +159,7 @@ if (isset($_GET['id']) || isset($_GET['nuevo'])) {
     </div>
     <?php if ($s['id']): ?>
     <section class="card">
-      <h2>Ficha de postulación <?= badge_ficha($ficha) ?></h2>
+      <h2>Formulario de postulación <?= badge_ficha($ficha) ?></h2>
       <p class="muted">Nombre, RUT, dirección, teléfono y correo son los mismos datos del formulario de arriba: si los corriges ahí, la ficha se actualiza.</p>
       <?php if (!$ficha): ?><p class="muted">El socio aún no completa su ficha. Puede hacerlo desde su panel, en "Mi ficha de postulación".</p>
       <?php else: $fv = ficha_datos($s, $ficha); $faltan = ficha_faltantes($fv); ?>
@@ -198,24 +198,43 @@ $todos = isset($_GET['todos']);
 $socios = socios_con_pagos(!$todos);
 $fichas = [];
 foreach (q('SELECT * FROM postulaciones WHERE usuario_id IS NOT NULL')->fetchAll() as $f) $fichas[$f['usuario_id']] = $f;
+$completado = fn(array $s) => !empty($fichas[$s['id']]['enviada']);
+$nCompletos = count(array_filter($socios, $completado));
+// Filtro por formulario: ?form=si (completaron) / ?form=no (pendientes)
+$filtroForm = $_GET['form'] ?? '';
+$lista = match ($filtroForm) {
+    'si' => array_filter($socios, $completado),
+    'no' => array_filter($socios, fn($s) => !$completado($s)),
+    default => $socios,
+};
+$qs = fn(array $extra) => '?' . http_build_query(array_filter(['todos' => $todos ? 1 : null] + $extra));
 page_start('Socios', 'admin/socios.php');
 ?>
 <section class="card">
   <h2><?= count($socios) ?> socios <?= $todos ? '' : 'activos' ?>
     <span class="acciones-fila">
-      <a class="btn chico sec" href="?<?= $todos ? '' : 'todos=1' ?>"><?= $todos ? 'Solo activos' : 'Ver también inactivos' ?></a>
+      <a class="btn chico sec" href="?<?= http_build_query(array_filter(['todos' => $todos ? null : 1, 'form' => $filtroForm ?: null])) ?>"><?= $todos ? 'Solo activos' : 'Ver también inactivos' ?></a>
       <a class="btn chico" href="?nuevo=1">+ Nuevo socio</a>
     </span>
   </h2>
+  <div class="resumen-form">
+    <p><strong><?= $nCompletos ?> de <?= count($socios) ?></strong> completaron el formulario de postulación</p>
+    <div class="barra"><i style="width:<?= count($socios) ? round($nCompletos * 100 / count($socios)) : 0 ?>%"></i></div>
+    <nav class="filtros" aria-label="Filtrar por formulario">
+      <a href="<?= $qs([]) ?>" <?= $filtroForm === '' ? 'aria-current="true"' : '' ?>>Todos (<?= count($socios) ?>)</a>
+      <a href="<?= $qs(['form' => 'si']) ?>" <?= $filtroForm === 'si' ? 'aria-current="true"' : '' ?>>Completaron (<?= $nCompletos ?>)</a>
+      <a href="<?= $qs(['form' => 'no']) ?>" <?= $filtroForm === 'no' ? 'aria-current="true"' : '' ?>>No han completado (<?= count($socios) - $nCompletos ?>)</a>
+    </nav>
+  </div>
   <div class="tabla-wrap"><table>
-    <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Cuotas</th><th>Ficha</th><th>Acceso</th><th></th></tr></thead>
-    <tbody><?php foreach ($socios as $s): ?>
+    <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Cuotas</th><th>Formulario</th><th>Acceso</th><th></th></tr></thead>
+    <tbody><?php foreach ($lista as $s): $f = $fichas[$s['id']] ?? null; ?>
       <tr>
         <td><a href="?id=<?= $s['id'] ?>"><?= e($s['nombre']) ?></a><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja' . ($s['fecha_baja'] ? ' desde ' . fecha($s['fecha_baja']) : '') . '</span>' ?></td>
         <td class="num"><?= rut_formato($s['rut']) ?></td>
         <td><?= e($s['cargo'] ?? '') ?></td>
         <td><?= badge_cuota($s['cuota']) ?></td>
-        <td><?= badge_ficha($fichas[$s['id']] ?? null) ?></td>
+        <td><?= badge_ficha_lista($f, $f ? ficha_faltantes(ficha_datos($s, $f)) : []) ?></td>
         <td><?= $s['rol'] === 'admin' ? '<span class="badge mar">Admin</span>' : ($s['password_hash'] ? '<span class="badge ok">Miembro</span>' : '<span class="badge neutro">Sin clave</span>') ?></td>
         <td class="acc"><a class="btn chico sec" href="?id=<?= $s['id'] ?>">Editar</a></td>
       </tr>

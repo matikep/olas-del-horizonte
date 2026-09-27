@@ -92,10 +92,19 @@ function badges_faltan(array $faltan): string
 
 function badge_ficha(?array $f): string
 {
-    if (!$f) return '<span class="badge falta">Sin ficha</span>';
-    if (!$f['enviada']) return '<span class="badge warn">Borrador</span>';
-    if ($f['actualizado'] && $f['actualizado'] > $f['enviada']) return '<span class="badge mar">Actualizada ' . fecha($f['actualizado']) . '</span>';
-    return '<span class="badge ok">Enviada ' . fecha($f['enviada']) . '</span>';
+    if (!$f) return '<span class="badge falta">Sin formulario</span>';
+    if (!$f['enviada']) return '<span class="badge warn">Formulario en borrador</span>';
+    $act = $f['actualizado'] && $f['actualizado'] > $f['enviada'] ? ' · actualizado ' . fecha($f['actualizado']) : '';
+    return '<span class="badge ok" title="Enviado el ' . fecha($f['enviada']) . '">✓ Formulario completado' . $act . '</span>';
+}
+
+// Para listas: además del estado, cuántas cosas faltan (detalle al pasar el mouse).
+function badge_ficha_lista(?array $f, array $faltan): string
+{
+    $pend = $f && $faltan
+        ? ' <span class="badge falta" title="Falta: ' . e(implode(', ', $faltan)) . '">faltan ' . count($faltan) . '</span>'
+        : '';
+    return badge_ficha($f) . $pend;
 }
 
 function ficha_borrar_archivos(array $archivos): void
