@@ -84,6 +84,27 @@ function ficha_subir_docs(): array
     return [$nuevos, $err];
 }
 
+// Tramos del Registro Social de Hogares. Postulación colectiva: al menos el 70% del grupo en el tramo 40
+// y el resto entre los tramos 50 y 90 (tramo 100 queda fuera). Ahorro: 10 UF en tramo 40, 15 UF en 50–90.
+const TRAMOS_RSH = [40 => '0–40%', 50 => '41–50%', 60 => '51–60%', 70 => '61–70%', 80 => '71–80%', 90 => '81–90%', 100 => '91–100%'];
+const META_TRAMO_40 = 70;          // % mínimo del grupo en tramo 40
+const RSH_MESES_VIGENCIA = 6;      // ponytail: criterio propio para marcar cartolas antiguas; ajustar si SERVIU pide otro
+
+function rsh_antigua(?string $fecha): bool
+{
+    return $fecha !== null && $fecha < date('Y-m-d', strtotime('-' . RSH_MESES_VIGENCIA . ' months'));
+}
+
+function badge_tramo(?array $f): string
+{
+    if (!$f || !$f['tramo_rsh']) return '<span class="badge neutro">Sin revisar</span>';
+    $t = (int)$f['tramo_rsh'];
+    $clase = $t === 40 ? 'ok' : ($t <= 90 ? 'mar' : 'falta');
+    $titulo = 'Tramo ' . $t . ' (' . TRAMOS_RSH[$t] . ')' . ($t > 90 ? ' · fuera del rango permitido (sobre 90%)' : '');
+    $antigua = rsh_antigua($f['rsh_fecha']) ? ' <span class="badge warn" title="Cartola del ' . fecha($f['rsh_fecha']) . '">cartola antigua</span>' : '';
+    return '<span class="badge ' . $clase . '" title="' . e($titulo) . '">Tramo ' . $t . '</span>' . $antigua;
+}
+
 // Lo que falta, como badges rojos.
 function badges_faltan(array $faltan): string
 {

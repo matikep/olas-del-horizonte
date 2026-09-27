@@ -87,6 +87,8 @@ CREATE TABLE postulaciones (
   formato ENUM('familiar','unipersonal') NULL,
   causal VARCHAR(30) NULL,                -- solo postulación unipersonal
   tiene_ahorro TINYINT(1) NOT NULL DEFAULT 0,  -- declara tener cuenta de ahorro vivienda (buena fe)
+  tramo_rsh TINYINT UNSIGNED NULL,        -- tramo del Registro Social de Hogares (40, 50 … 100), lo marca la directiva
+  rsh_fecha DATE NULL,                    -- fecha de consulta de la cartola revisada
   doc_cedula VARCHAR(100) NULL,           -- archivos en /uploads (solo admin)
   doc_rsh VARCHAR(100) NULL,
   doc_serviu VARCHAR(100) NULL,           -- declaraciones SERVIU (solo unipersonal)

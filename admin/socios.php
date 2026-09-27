@@ -8,6 +8,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $id = (int)post('id');
 
+    if (post('accion') === 'rsh') {
+        // Revisión de la directiva: tramo y fecha de la cartola RSH
+        $tramo = (int)post('tramo_rsh');
+        $fechaRsh = post('rsh_fecha');
+        if (($tramo && !isset(TRAMOS_RSH[$tramo])) || ($fechaRsh !== '' && !fecha_valida($fechaRsh))) {
+            flash('Tramo o fecha de cartola inválidos.', 'error');
+        } else {
+            q('UPDATE postulaciones SET tramo_rsh = ?, rsh_fecha = ? WHERE usuario_id = ?', [$tramo ?: null, $fechaRsh ?: null, $id]);
+            flash('Tramo RSH guardado.');
+        }
+        redirect("admin/socios.php?id=$id");
+    }
+
     if (post('accion') === 'eliminar') {
         // Triple confirmación: (1) nombre exacto, (2) clave del admin, (3) confirm() en el navegador.
         $socio = q('SELECT * FROM usuarios WHERE id = ?', [$id])->fetch();
@@ -175,10 +188,24 @@ if (isset($_GET['id']) || isset($_GET['nuevo'])) {
               'Formato de postulación' => FORMATOS[$fv['formato']] ?? null,
               'Causal de excepción' => $fv['formato'] === 'unipersonal' ? (CAUSALES[$fv['causal']] ?? null) : 'No aplica',
               'Cuenta de ahorro vivienda' => !empty($fv['tiene_ahorro']) ? 'Declara tenerla creada (buena fe)' : null,
+              'Tramo RSH (revisado)' => $ficha['tramo_rsh'] ? 'Tramo ' . $ficha['tramo_rsh'] . ' (' . TRAMOS_RSH[(int)$ficha['tramo_rsh']] . ')' . ($ficha['rsh_fecha'] ? ' · cartola del ' . fecha($ficha['rsh_fecha']) : '') : null,
           ] as $etq => $valor): ?>
             <tr><th scope="row"><?= $etq ?></th><td><?= $valor ? e($valor) : '<span class="badge falta">Falta</span>' ?></td></tr>
           <?php endforeach; ?>
         </tbody></table></div>
+        <form method="post" class="revision-rsh">
+          <?= csrf_field() ?><input type="hidden" name="id" value="<?= $s['id'] ?>"><input type="hidden" name="accion" value="rsh">
+          <strong>Revisión de la cartola RSH</strong>
+          <div class="grid-form">
+            <label>Tramo<select name="tramo_rsh"><option value="">Sin revisar</option>
+              <?php foreach (TRAMOS_RSH as $t => $rango): ?><option value="<?= $t ?>" <?= (int)$ficha['tramo_rsh'] === $t ? 'selected' : '' ?>>Tramo <?= $t ?> (<?= $rango ?>)</option><?php endforeach; ?>
+            </select></label>
+            <label>Fecha de la cartola<input type="date" name="rsh_fecha" value="<?= e($ficha['rsh_fecha'] ?? '') ?>"></label>
+          </div>
+          <?php if ((int)$ficha['tramo_rsh'] > 90): ?><p class="flash error">Tramo sobre el 90%: queda fuera del rango permitido para la postulación colectiva.</p><?php endif; ?>
+          <?php if (rsh_antigua($ficha['rsh_fecha'])): ?><p class="flash error">La cartola tiene más de <?= RSH_MESES_VIGENCIA ?> meses: pedir una actualizada.</p><?php endif; ?>
+          <button class="chico">Guardar tramo</button>
+        </form>
         <?php if (!empty($ficha['mensaje'])): ?><p class="nota-ficha"><strong>Notas de la directiva:</strong> <span class="pre"><?= e($ficha['mensaje']) ?></span></p><?php endif; ?>
         <?php if ($faltan): ?><p><strong>Pendiente:</strong> <?= badges_faltan($faltan) ?></p><?php endif; ?>
         <p class="acciones-fila">
@@ -208,6 +235,11 @@ $lista = match ($filtroForm) {
     'no' => array_filter($socios, fn($s) => !$completado($s)),
     default => $socios,
 };
+// Meta de tramos RSH (sobre los socios de la lista con tramo revisado)
+$conTramo = array_filter($socios, fn($s) => !empty($fichas[$s['id']]['tramo_rsh']));
+$enTramo40 = count(array_filter($conTramo, fn($s) => (int)$fichas[$s['id']]['tramo_rsh'] === 40));
+$fueraRango = count(array_filter($conTramo, fn($s) => (int)$fichas[$s['id']]['tramo_rsh'] > 90));
+$pct40 = $conTramo ? (int)round($enTramo40 * 100 / count($conTramo)) : 0;
 $qs = fn(array $extra) => '?' . http_build_query(array_filter(['todos' => $todos ? 1 : null] + $extra));
 page_start('Socios', 'admin/socios.php');
 ?>
@@ -221,6 +253,10 @@ page_start('Socios', 'admin/socios.php');
   <div class="resumen-form">
     <p><strong><?= $nCompletos ?> de <?= count($socios) ?></strong> completaron el formulario de postulación</p>
     <div class="barra"><i style="width:<?= count($socios) ? round($nCompletos * 100 / count($socios)) : 0 ?>%"></i></div>
+    <p class="resumen-rsh"><strong>Tramo RSH:</strong> <?= count($conTramo) ?> de <?= count($socios) ?> revisados ·
+      en tramo 40: <strong><?= $enTramo40 ?> (<?= $pct40 ?>%)</strong>
+      <span class="badge <?= $pct40 >= META_TRAMO_40 ? 'ok' : 'falta' ?>"><?= $pct40 >= META_TRAMO_40 ? 'cumple' : 'no cumple' ?> la meta de ≥ <?= META_TRAMO_40 ?>%</span>
+      <?= $fueraRango ? '<span class="badge falta">' . $fueraRango . ' sobre el 90%</span>' : '' ?></p>
     <nav class="filtros" aria-label="Filtrar por formulario">
       <a href="<?= $qs([]) ?>" <?= $filtroForm === '' ? 'aria-current="true"' : '' ?>>Todos (<?= count($socios) ?>)</a>
       <a href="<?= $qs(['form' => 'si']) ?>" <?= $filtroForm === 'si' ? 'aria-current="true"' : '' ?>>Completaron (<?= $nCompletos ?>)</a>
@@ -228,7 +264,7 @@ page_start('Socios', 'admin/socios.php');
     </nav>
   </div>
   <div class="tabla-wrap"><table>
-    <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Cuotas</th><th>Formulario</th><th>Acceso</th><th></th></tr></thead>
+    <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Cuotas</th><th>Formulario</th><th>RSH</th><th>Acceso</th><th></th></tr></thead>
     <tbody><?php foreach ($lista as $s): $f = $fichas[$s['id']] ?? null; ?>
       <tr>
         <td><a href="?id=<?= $s['id'] ?>"><?= e($s['nombre']) ?></a><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja' . ($s['fecha_baja'] ? ' desde ' . fecha($s['fecha_baja']) : '') . '</span>' ?></td>
@@ -236,6 +272,7 @@ page_start('Socios', 'admin/socios.php');
         <td><?= e($s['cargo'] ?? '') ?></td>
         <td><?= badge_cuota($s['cuota']) ?></td>
         <td><?= badge_ficha_lista($f, $f ? ficha_faltantes(ficha_datos($s, $f)) : []) ?></td>
+        <td><?= badge_tramo($f) ?></td>
         <td><?= $s['rol'] === 'admin' ? '<span class="badge mar">Admin</span>' : ($s['password_hash'] ? '<span class="badge ok">Miembro</span>' : '<span class="badge neutro">Sin clave</span>') ?></td>
         <td class="acc"><a class="btn chico sec" href="?id=<?= $s['id'] ?>">Editar</a></td>
       </tr>
