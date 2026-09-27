@@ -290,6 +290,7 @@ td.acc form { display: inline; }
 @keyframes crecer { from { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .barra i { animation: none; } }
 .card.pago { border-left: 5px solid var(--azul); }
+.nota-ficha { background: var(--warn-bg); border-left: 4px solid var(--duna); border-radius: 8px; padding: .6rem .9rem; font-size: .92rem; }
 .resumen-form { background: var(--fondo); border-radius: var(--radio-s); padding: .9rem 1.1rem; margin-bottom: 1rem; }
 .resumen-form p { margin: 0; }
 .filtros { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }

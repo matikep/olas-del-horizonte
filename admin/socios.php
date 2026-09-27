@@ -179,6 +179,7 @@ if (isset($_GET['id']) || isset($_GET['nuevo'])) {
             <tr><th scope="row"><?= $etq ?></th><td><?= $valor ? e($valor) : '<span class="badge falta">Falta</span>' ?></td></tr>
           <?php endforeach; ?>
         </tbody></table></div>
+        <?php if (!empty($ficha['mensaje'])): ?><p class="nota-ficha"><strong>Notas de la directiva:</strong> <span class="pre"><?= e($ficha['mensaje']) ?></span></p><?php endif; ?>
         <?php if ($faltan): ?><p><strong>Pendiente:</strong> <?= badges_faltan($faltan) ?></p><?php endif; ?>
         <p class="acciones-fila">
           <?php foreach (DOCS_FICHA as $col => [$campo, $nombreDoc]): if ($ficha[$col]): ?>
