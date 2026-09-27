@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/../inc/app.php';
+require_once __DIR__ . '/../inc/alertas.php';
 
 require_admin();
 $socios = socios_con_pagos();
@@ -12,8 +13,14 @@ $nuevas = q("SELECT * FROM postulaciones WHERE estado = 'nueva' AND usuario_id I
 $ultima = q("SELECT r.*, (SELECT COUNT(*) FROM asistencias a WHERE a.reunion_id = r.id AND a.estado <> 'justificado') AS n FROM reuniones r ORDER BY fecha DESC LIMIT 1")->fetch();
 $sinClave = count(array_filter($socios, fn($s) => !$s['password_hash']));
 
+$alertas = alertas_admin();
 page_start('Panel de administración', 'admin/index.php');
 ?>
+<section class="card" aria-labelledby="h-alertas">
+  <h2 id="h-alertas">Alertas <span class="muted" style="font-size:.9rem;font-weight:500">se actualizan solas con cada cambio</span></h2>
+  <?= $alertas ? alertas_html($alertas) : '<p class="muted">Todo en orden: no hay alertas.</p>' ?>
+</section>
+
 <div class="stats">
   <div class="stat destacado"><span>Saldo en caja</span><strong><?= clp($recaudado - $gastado) ?></strong><small>Recaudado <?= clp($recaudado) ?> − gastos <?= clp($gastado) ?></small></div>
   <div class="stat"><span>Socios activos</span><strong><?= count($socios) ?></strong><small><?= $sinClave ?> sin clave de acceso</small></div>

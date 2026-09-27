@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/../inc/app.php';
-require __DIR__ . '/../inc/ficha.php';
+require_once __DIR__ . '/../inc/ficha.php';
 
 $yo = require_admin();
 

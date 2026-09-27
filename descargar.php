@@ -1,7 +1,7 @@
 <?php
 // Entrega archivos de /uploads solo a usuarios con sesión (y solo_admin solo a admins).
 require __DIR__ . '/inc/app.php';
-require __DIR__ . '/inc/ficha.php';
+require_once __DIR__ . '/inc/ficha.php';
 
 $u = require_login();
 if (isset($_GET['postulacion'])) {

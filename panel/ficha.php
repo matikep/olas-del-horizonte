@@ -1,7 +1,7 @@
 <?php
 // Ficha de postulación del socio: puede guardar avance, enviarla a la directiva y actualizarla cuando quiera.
 require __DIR__ . '/../inc/app.php';
-require __DIR__ . '/../inc/ficha.php';
+require_once __DIR__ . '/../inc/ficha.php';
 
 $u = require_login();
 $ficha = q('SELECT * FROM postulaciones WHERE usuario_id = ?', [$u['id']])->fetch() ?: null;

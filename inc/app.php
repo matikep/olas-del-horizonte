@@ -385,7 +385,13 @@ function nav_app(array $u, string $activo): string
             continue;
         }
         $cur = $it[0] === $activo ? ' aria-current="page"' : '';
-        $h .= '<li><a href="' . url($it[0]) . '"' . $cur . '>' . e($it[1]) . '</a></li>';
+        $extra = '';
+        if ($it[0] === 'admin/index.php') {
+            require_once __DIR__ . '/alertas.php';
+            $n = count(array_filter(alertas_admin(), fn($a) => in_array($a['nivel'], ['rojo', 'naranja'], true)));
+            $extra = $n ? ' <span class="nav-contador" title="Alertas que requieren atención">' . $n . '</span>' : '';
+        }
+        $h .= '<li><a href="' . url($it[0]) . '"' . $cur . '>' . e($it[1]) . $extra . '</a></li>';
     }
     return $h;
 }

@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/../inc/app.php';
+require_once __DIR__ . '/../inc/alertas.php';
 
 $u = require_login();
 $pagos = q('SELECT * FROM pagos WHERE usuario_id = ? ORDER BY fecha DESC, id DESC', [$u['id']])->fetchAll();
@@ -36,9 +37,8 @@ page_start('Hola, ' . explode(' ', $u['nombre'])[0], 'panel/index.php');
   </div>
 </div>
 
-<?php if ($c['meses_deuda'] > MESES_MORA): ?>
-  <p class="flash error" role="alert">Tienes <?= $c['meses_deuda'] ?> cuotas pendientes. Según el estatuto, más de <?= MESES_MORA ?> meses de atraso puede considerarse falta grave. Ponte al día o conversa con la tesorería.</p>
-<?php endif; ?>
+<?php $misAlertas = alertas_socio($u, q('SELECT * FROM postulaciones WHERE usuario_id = ?', [$u['id']])->fetch() ?: null, $c); ?>
+<?php if ($misAlertas): ?><section class="card" aria-label="Avisos para ti"><?= alertas_html($misAlertas, false) ?></section><?php endif; ?>
 <?php if (ajuste('datos_pago') !== ''): ?>
   <section class="card pago" aria-labelledby="h-pago">
     <h2 id="h-pago">¿Cómo pagar mis cuotas?</h2>
