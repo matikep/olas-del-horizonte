@@ -112,10 +112,11 @@ page_start('Tesorería', 'admin/tesoreria.php');
 
 <section class="card" id="estado">
   <h2>Estado de cuotas por socio</h2>
-  <div class="tabla-wrap"><table>
+  <?= buscador('#tabla-estado', 'Buscar socio o RUT…') ?>
+  <div class="tabla-wrap"><table id="tabla-estado">
     <thead><tr><th>Socio</th><th class="num">Pagado</th><th class="num">Esperado</th><th>Estado</th><th></th></tr></thead>
     <tbody><?php foreach ($socios as $s): if (!$s['activo'] && $s['cuota']['saldo'] >= 0) continue;   // de baja: solo si quedó debiendo ?>
-      <tr><td><?= e($s['nombre']) ?><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja desde ' . fecha($s['fecha_baja']) . '</span>' ?></td><td class="num"><?= clp($s['cuota']['pagado']) ?></td><td class="num"><?= clp($s['cuota']['esperado']) ?></td>
+      <tr data-buscar="<?= e(rut_formato($s['rut'])) ?>"><td><?= e($s['nombre']) ?><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja desde ' . fecha($s['fecha_baja']) . '</span>' ?></td><td class="num"><?= clp($s['cuota']['pagado']) ?></td><td class="num"><?= clp($s['cuota']['esperado']) ?></td>
       <td><?= badge_cuota($s['cuota']) ?></td><td class="acc"><a class="btn chico sec" href="?socio=<?= $s['id'] ?>#pagos">Ver pagos</a></td></tr>
     <?php endforeach; ?></tbody>
   </table></div>
@@ -124,7 +125,8 @@ page_start('Tesorería', 'admin/tesoreria.php');
 <div class="dos-col">
   <section class="card" id="pagos">
     <h2>Pagos <?= $filtro ? '· ' . e(array_column($socios, 'nombre', 'id')[$filtro] ?? '') . ' <a class="btn chico sec" href="tesoreria.php#pagos">Ver todos</a>' : '' ?></h2>
-    <div class="tabla-wrap"><table>
+    <?= buscador('#tabla-pagos', 'Buscar por socio, fecha, monto u observación…') ?>
+    <div class="tabla-wrap"><table id="tabla-pagos">
       <thead><tr><th>Fecha</th><th>Socio</th><th class="num">Monto</th><th></th></tr></thead>
       <tbody><?php foreach ($pagos as $p): ?>
         <tr><td><?= fecha($p['fecha']) ?></td><td><?= e($p['nombre']) ?><br><small class="muted"><?= e(trim(($p['forma_pago'] ?? '') . ' ' . ($p['observacion'] ?? ''))) ?></small></td><td class="num"><?= clp($p['monto']) ?></td>
@@ -134,7 +136,8 @@ page_start('Tesorería', 'admin/tesoreria.php');
   </section>
   <section class="card">
     <h2>Gastos</h2>
-    <div class="tabla-wrap"><table>
+    <?= buscador('#tabla-gastos', 'Buscar por concepto, fecha o monto…') ?>
+    <div class="tabla-wrap"><table id="tabla-gastos">
       <thead><tr><th>Fecha</th><th>Concepto</th><th class="num">Monto</th><th></th></tr></thead>
       <tbody><?php foreach ($gastos as $g): ?>
         <tr><td><?= fecha($g['fecha']) ?></td><td><?= e($g['concepto']) ?></td><td class="num"><?= clp($g['monto']) ?></td>

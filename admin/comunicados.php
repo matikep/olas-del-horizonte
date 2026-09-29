@@ -44,9 +44,10 @@ page_start('Comunicados', 'admin/comunicados.php');
   <section class="card">
     <h2>Publicados</h2>
     <?php if (!$lista): ?><p class="muted">Aún no hay comunicados.</p><?php endif; ?>
-    <div class="tabla-wrap"><table><tbody>
+    <?= $lista ? buscador('#tabla-comunicados', 'Buscar en títulos y textos…') : '' ?>
+    <div class="tabla-wrap"><table id="tabla-comunicados"><tbody>
       <?php foreach ($lista as $c): ?>
-        <tr><td><?= fecha($c['fecha']) ?></td><td><?= e($c['titulo']) ?> <?= $c['publico'] ? '<span class="badge mar">Público</span>' : '<span class="badge neutro">Socios</span>' ?></td>
+        <tr data-buscar="<?= e(mb_substr($c['cuerpo'], 0, 2000)) ?>"><td><?= fecha($c['fecha']) ?></td><td><?= e($c['titulo']) ?> <?= $c['publico'] ? '<span class="badge mar">Público</span>' : '<span class="badge neutro">Socios</span>' ?></td>
         <td class="acc"><a class="btn chico sec" href="?id=<?= $c['id'] ?>">Editar</a>
           <form method="post" onsubmit="return confirm('¿Eliminar este comunicado?')"><?= csrf_field() ?><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="id" value="<?= $c['id'] ?>"><button class="peligro chico" aria-label="Eliminar">×</button></form></td></tr>
       <?php endforeach; ?>

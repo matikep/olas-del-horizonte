@@ -8,6 +8,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $id = (int)post('id');
 
+    if (post('accion') === 'docs') {
+        // La directiva sube (o reemplaza) documentos de la ficha de un socio
+        $socio = q('SELECT * FROM usuarios WHERE id = ?', [$id])->fetch();
+        if (!$socio) redirect('admin/socios.php');
+        $ficha = q('SELECT * FROM postulaciones WHERE usuario_id = ?', [$id])->fetch() ?: null;
+        [$docs, $errDocs] = ficha_subir_docs();
+        if ($docs && $ficha) {
+            q('UPDATE postulaciones SET ' . implode(' = ?, ', array_keys($docs)) . ' = ? WHERE id = ?', [...array_values($docs), $ficha['id']]);
+            ficha_borrar_archivos(array_intersect_key($ficha, $docs));   // reemplazados
+        } elseif ($docs) {
+            // Sin ficha todavía: se crea en borrador con los documentos (el socio completa el resto)
+            $campos = $docs + ['usuario_id' => $id, 'nombre' => $socio['nombre'], 'rut' => $socio['rut'], 'estado' => 'aceptada'];
+            q('INSERT INTO postulaciones (' . implode(',', array_keys($campos)) . ') VALUES (' . rtrim(str_repeat('?,', count($campos)), ',') . ')', array_values($campos));
+        }
+        $nombres = array_map(fn($col) => DOCS_FICHA[$col][1], array_keys($docs));
+        $msg = $docs ? 'Documentos guardados: ' . implode(', ', $nombres) . '.' : ($errDocs ? '' : 'No seleccionaste ningún archivo.');
+        flash(trim($msg . ' ' . implode(' ', $errDocs)), $errDocs || !$docs ? 'error' : 'ok');
+        redirect("admin/socios.php?id=$id#documentos");
+    }
+
     if (post('accion') === 'rsh') {
         // Revisión de la directiva: tramo y fecha de la cartola RSH
         $tramo = (int)post('tramo_rsh');
@@ -208,12 +228,23 @@ if (isset($_GET['id']) || isset($_GET['nuevo'])) {
         </form>
         <?php if (!empty($ficha['mensaje'])): ?><p class="nota-ficha"><strong>Notas de la directiva:</strong> <span class="pre"><?= e($ficha['mensaje']) ?></span></p><?php endif; ?>
         <?php if ($faltan): ?><p><strong>Pendiente:</strong> <?= badges_faltan($faltan) ?></p><?php endif; ?>
-        <p class="acciones-fila">
-          <?php foreach (DOCS_FICHA as $col => [$campo, $nombreDoc]): if ($ficha[$col]): ?>
-            <a class="btn chico sec" href="<?= url("descargar.php?postulacion={$ficha['id']}&doc=$campo") ?>" target="_blank" rel="noopener"><?= $nombreDoc ?></a>
-          <?php endif; endforeach; ?>
-        </p>
       <?php endif; ?>
+
+      <form method="post" enctype="multipart/form-data" class="docs-admin" id="documentos">
+        <?= csrf_field() ?><input type="hidden" name="id" value="<?= $s['id'] ?>"><input type="hidden" name="accion" value="docs">
+        <strong>Documentos del socio</strong>
+        <p class="muted nota">PDF o foto (JPG, PNG, HEIC), máximo 15 MB cada uno. Subir un archivo reemplaza el anterior. Solo la directiva y el propio socio pueden verlos.</p>
+        <?php foreach (DOCS_FICHA as $col => [$campo, $nombreDoc, , , $soloUni]): $tiene = $ficha && $ficha[$col]; ?>
+          <label><?= e($nombreDoc) ?><?= $soloUni ? ' <small>(solo postulación unipersonal)</small>' : '' ?>
+            <?php if ($tiene): ?>
+              <span class="doc-ok">✓ Cargado · <a href="<?= url("descargar.php?postulacion={$ficha['id']}&doc=$campo") ?>" target="_blank" rel="noopener">ver</a> · elige otro archivo solo para reemplazarlo</span>
+            <?php elseif (!$soloUni || ($ficha['formato'] ?? '') === 'unipersonal'): ?>
+              <span class="badge falta">Falta</span>
+            <?php endif; ?>
+            <input type="file" name="<?= $campo ?>" accept=".pdf,.jpg,.jpeg,.png,.heic"></label>
+        <?php endforeach; ?>
+        <button class="chico">Subir documentos</button>
+      </form>
     </section>
     <?php endif; ?>
     <?php
@@ -263,10 +294,11 @@ page_start('Socios', 'admin/socios.php');
       <a href="<?= $qs(['form' => 'no']) ?>" <?= $filtroForm === 'no' ? 'aria-current="true"' : '' ?>>No han completado (<?= count($socios) - $nCompletos ?>)</a>
     </nav>
   </div>
-  <div class="tabla-wrap"><table>
+  <?= buscador('#tabla-socios', 'Buscar por nombre, RUT, teléfono, correo o dirección…', trim((string)($_GET['q'] ?? ''))) ?>
+  <div class="tabla-wrap"><table id="tabla-socios">
     <thead><tr><th>Nombre</th><th>RUT</th><th>Cargo</th><th>Cuotas</th><th>Formulario</th><th>RSH</th><th>Acceso</th><th></th></tr></thead>
     <tbody><?php foreach ($lista as $s): $f = $fichas[$s['id']] ?? null; ?>
-      <tr>
+      <tr data-buscar="<?= e(implode(' ', array_filter([$s['telefono'], telefono_formato($s['telefono']), $s['email'], $s['direccion']]))) ?>">
         <td><a href="?id=<?= $s['id'] ?>"><?= e($s['nombre']) ?></a><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja' . ($s['fecha_baja'] ? ' desde ' . fecha($s['fecha_baja']) : '') . '</span>' ?></td>
         <td class="num"><?= rut_formato($s['rut']) ?></td>
         <td><?= e($s['cargo'] ?? '') ?></td>

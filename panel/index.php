@@ -93,7 +93,8 @@ page_start('Hola, ' . explode(' ', $u['nombre'])[0], 'panel/index.php');
 <section class="card" aria-labelledby="h-docs">
   <h2 id="h-docs">Actas y documentos</h2>
   <?php if (!$docs): ?><p class="muted">Aún no hay documentos.</p><?php else: ?>
-  <div class="tabla-wrap"><table>
+  <?= buscador('#tabla-mis-docs', 'Buscar acta o documento…') ?>
+  <div class="tabla-wrap"><table id="tabla-mis-docs">
     <thead><tr><th>Fecha</th><th>Documento</th><th>Tipo</th><th></th></tr></thead>
     <tbody><?php foreach ($docs as $d): ?>
       <tr><td><?= fecha($d['fecha']) ?></td><td><?= e($d['titulo']) ?></td><td><span class="badge mar"><?= e(CATEGORIAS_DOC[$d['categoria']]) ?></span></td>

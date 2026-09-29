@@ -35,3 +35,41 @@ document.querySelectorAll('input.rut').forEach(i => {
   i.addEventListener('input', () => { i.value = rutFormato(i.value); revisar(); });
   revisar();
 });
+
+// Buscador de tablas: filtra filas en vivo. Ignora tildes y mayúsculas; RUT y teléfonos se encuentran
+// escritos con o sin puntos, guion o espacios. Busca también en data-buscar (datos que no se ven en la tabla).
+const sinTildes = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const soloDigitos = t => t.replace(/[^0-9k]/gi, '').toLowerCase();
+document.querySelectorAll('input[data-filtra]').forEach(input => {
+  const tabla = document.querySelector(input.dataset.filtra);
+  if (!tabla || !tabla.tBodies[0]) return;
+  const filas = [...tabla.tBodies[0].rows];
+  const indice = filas.map(tr => {
+    const texto = tr.textContent + ' ' + (tr.dataset.buscar || '');
+    return { texto: sinTildes(texto), digitos: soloDigitos(texto) };
+  });
+  const contador = input.parentElement.querySelector('.buscador-n');
+  const vacia = tabla.tBodies[0].insertRow();
+  vacia.hidden = true;
+  vacia.className = 'sin-resultados';
+  const celda = vacia.insertCell();
+  celda.colSpan = filas[0] ? filas[0].cells.length : 1;
+  celda.textContent = 'No hay resultados para tu búsqueda.';
+
+  const filtrar = () => {
+    const q = sinTildes(input.value.trim());
+    const palabras = q.split(/\s+/).filter(Boolean);
+    const esNumero = /^[0-9k.\-\s+]+$/i.test(q) && soloDigitos(q).length >= 3;
+    let visibles = 0;
+    filas.forEach((tr, i) => {
+      const coincide = !q || palabras.every(p => indice[i].texto.includes(p))
+        || (esNumero && indice[i].digitos.includes(soloDigitos(q)));
+      tr.hidden = !coincide;
+      if (coincide) visibles++;
+    });
+    vacia.hidden = !q || visibles > 0;
+    contador.textContent = q ? visibles + (visibles === 1 ? ' resultado' : ' resultados') : '';
+  };
+  input.addEventListener('input', filtrar);
+  if (input.value) filtrar();   // búsqueda que viene desde el menú (?q=)
+});

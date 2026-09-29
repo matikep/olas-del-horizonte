@@ -48,7 +48,8 @@ page_start('Actas y documentos', 'admin/documentos.php');
 
 <section class="card">
   <h2><?= count($docs) ?> documentos</h2>
-  <div class="tabla-wrap"><table>
+  <?= buscador('#tabla-docs', 'Buscar por título, archivo, tipo o fecha…') ?>
+  <div class="tabla-wrap"><table id="tabla-docs">
     <thead><tr><th>Fecha</th><th>Título</th><th>Tipo</th><th>Visible para</th><th></th></tr></thead>
     <tbody><?php foreach ($docs as $d): ?>
       <tr><td><?= fecha($d['fecha']) ?></td><td><?= e($d['titulo']) ?><br><small class="muted"><?= e($d['nombre_original']) ?></small></td>

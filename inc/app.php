@@ -131,6 +131,13 @@ function url(string $path = ''): string
     return rtrim($CFG['base'], '/') . '/' . ltrim($path, '/');
 }
 
+// URL de un archivo estático con versión = fecha de modificación: el navegador descarga la nueva al actualizarla.
+function asset(string $path): string
+{
+    $archivo = __DIR__ . '/../' . $path;
+    return url($path) . '?v=' . (is_file($archivo) ? filemtime($archivo) : '0');
+}
+
 function redirect(string $path): never
 {
     header('Location: ' . url($path));
@@ -361,6 +368,14 @@ function subir_archivo(string $campo, array $exts = EXT_PERMITIDAS): array
     return [$nombre, mb_substr(basename($f['name']), 0, 200)];
 }
 
+// Campo que filtra en vivo las filas de una tabla (assets/app.js). $valor: texto inicial (ej. desde ?q=).
+function buscador(string $tabla, string $placeholder, string $valor = ''): string
+{
+    return '<div class="buscador"><input type="search" data-filtra="' . e($tabla) . '" placeholder="' . e($placeholder) . '"'
+        . ' aria-label="' . e($placeholder) . '" autocomplete="off" value="' . e($valor) . '">'
+        . '<span class="buscador-n" aria-live="polite"></span></div>';
+}
+
 // ---------- Layout ----------
 function nav_app(array $u, string $activo): string
 {
@@ -410,7 +425,7 @@ function page_start(string $titulo, ?string $activo = null): void
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= url('assets/style.css') ?>?v=3">
+<link rel="stylesheet" href="<?= asset('assets/style.css') ?>">
 <link rel="icon" href="<?= url('assets/icono.svg') ?>">
 </head>
 <body class="<?= $u ? 'app' : 'public' ?>">
@@ -418,6 +433,11 @@ function page_start(string $titulo, ?string $activo = null): void
 <div class="app-shell">
   <aside class="sidebar">
     <a class="brand" href="<?= url() ?>"><?= logo() ?><span>Olas del<br>Horizonte</span></a>
+    <?php if ($u['rol'] === 'admin'): ?>
+    <form class="buscar-nav" action="<?= url('admin/socios.php') ?>" method="get" role="search">
+      <input type="search" name="q" placeholder="Buscar socio…" aria-label="Buscar socio por nombre, RUT, teléfono o correo" autocomplete="off">
+    </form>
+    <?php endif; ?>
     <nav aria-label="Menú"><ul><?= nav_app($u, $activo) ?></ul></nav>
     <div class="who">
       <strong><?= e($u['nombre']) ?></strong>
@@ -435,7 +455,7 @@ function page_start(string $titulo, ?string $activo = null): void
 
 function page_end(): void
 {
-    echo '<script src="' . url('assets/app.js') . '?v=1"></script>';
+    echo '<script src="' . asset('assets/app.js') . '"></script>';
     echo $GLOBALS['APP_SHELL'] ?? false ? "</main></div>\n</body></html>" : "</main>\n</body></html>";
 }
 

@@ -49,7 +49,8 @@ page_start('Pre-postulaciones', 'admin/postulaciones.php');
   <h2><?= count($lista) ?> pre-postulaciones recibidas desde el sitio</h2>
   <p class="muted">Personas que dejaron sus datos de contacto. Al registrarlas con "Crear socio", completan su ficha (RUT, documentos, etc.) desde su propio panel.</p>
   <?php if (!$lista): ?><p class="muted">Todavía nadie ha enviado la pre-postulación.</p><?php endif; ?>
-  <div class="tabla-wrap"><table>
+  <?= $lista ? buscador('#tabla-post', 'Buscar por nombre, teléfono, correo o mensaje…') : '' ?>
+  <div class="tabla-wrap"><table id="tabla-post">
     <thead><tr><th>Fecha</th><th>Persona</th><th>Contacto</th><th>Estado</th><th></th></tr></thead>
     <tbody><?php foreach ($lista as $p): ?>
       <tr>

@@ -132,7 +132,8 @@ page_start('Reuniones y asistencia', 'admin/reuniones.php');
 ?>
 <section class="card">
   <h2><?= count($reuniones) ?> reuniones <a class="btn chico" href="?nueva=1">+ Nueva reunión</a></h2>
-  <div class="tabla-wrap"><table>
+  <?= buscador('#tabla-reuniones', 'Buscar por título, fecha o lugar…') ?>
+  <div class="tabla-wrap"><table id="tabla-reuniones">
     <thead><tr><th>Fecha</th><th>Reunión</th><th>Lugar</th><th class="num">Asistentes</th><th></th></tr></thead>
     <tbody><?php foreach ($reuniones as $r): ?>
       <tr><td><?= fecha($r['fecha']) ?></td><td><?= e($r['titulo']) ?></td><td class="muted"><?= e($r['lugar']) ?></td>
