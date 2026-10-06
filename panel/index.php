@@ -4,7 +4,7 @@ require_once __DIR__ . '/../inc/alertas.php';
 
 $u = require_login();
 $pagos = q('SELECT * FROM pagos WHERE usuario_id = ? ORDER BY fecha DESC, id DESC', [$u['id']])->fetchAll();
-$c = estado_cuota((int)array_sum(array_column($pagos, 'monto')));
+$c = estado_cuota((int)array_sum(array_column($pagos, 'monto')), $u['fecha_baja']);
 // Reuniones sin lista de asistencia cargada (ej. online sin registro) no cuentan como ausencia.
 // estado NULL = ausente. Reuniones sin lista cargada no cuentan; las justificadas no penalizan.
 $reuniones = q('SELECT r.*, a.estado,
@@ -26,7 +26,7 @@ page_start('Hola, ' . explode(' ', $u['nombre'])[0], 'panel/index.php');
   <div class="stat destacado">
     <span>Mis cuotas</span>
     <strong><?= $c['cuotas'] ?> <?= $c['cuotas'] === 1 ? 'cuota pagada' : 'cuotas pagadas' ?></strong>
-    <small>Cuota mensual <?= clp((int)ajuste('cuota_mensual')) ?></small>
+    <small><?= $c['pendientes'] ? $c['pendientes'] . ' sin pagar' : 'Estás al día' ?> · cuota mensual <?= clp((int)ajuste('cuota_mensual')) ?></small>
   </div>
   <div class="stat"><span>Total aportado</span><strong><?= clp($c['pagado']) ?></strong><small>¡Gracias por tu aporte!</small></div>
   <div class="stat <?= $pct >= 75 ? 'bien' : ($pct < 50 ? 'alerta' : '') ?>">
