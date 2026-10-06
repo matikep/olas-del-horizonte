@@ -154,12 +154,11 @@ if (isset($_GET['id']) || isset($_GET['nuevo'])) {
         </script>
         <button>Guardar</button>
       </form>
-      <?php if ($s['id']): $c = estado_cuota($s['fecha_ingreso'], (int)array_sum(array_column($pagos, 'monto')), $s['fecha_baja']); ?>
+      <?php if ($s['id']): $c = estado_cuota((int)array_sum(array_column($pagos, 'monto'))); ?>
       <section class="card">
         <h2>Cuotas <a class="btn chico sec" href="tesoreria.php?socio=<?= $s['id'] ?>#pago">Registrar pago</a></h2>
         <p><?= badge_cuota($c) ?></p>
-        <p class="muted">Pagado <?= clp($c['pagado']) ?> de <?= clp($c['esperado']) ?> esperado (<?= $c['meses'] ?> meses).</p>
-        <?php if (!$s['activo'] && $s['fecha_baja']): ?><p class="muted">Dado de baja el <?= fecha($s['fecha_baja']) ?>: las cuotas se calculan solo hasta ese mes.</p><?php endif; ?>
+        <p class="muted">Total pagado <?= clp($c['pagado']) ?>, equivalente a <?= $c['cuotas'] ?> cuotas de <?= clp((int)ajuste('cuota_mensual')) ?>.</p>
         <div class="tabla-wrap"><table>
           <tbody><?php foreach ($pagos as $p): ?><tr><td><?= fecha($p['fecha']) ?></td><td class="muted"><?= e($p['observacion']) ?></td><td class="num"><?= clp($p['monto']) ?></td></tr><?php endforeach; ?></tbody>
         </table></div>

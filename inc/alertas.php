@@ -79,17 +79,12 @@ function alertas_fichas(array $socios, array $fichas): array
 
 function alertas_cuotas_asistencia(array $socios): array
 {
-    $mora = array_filter($socios, fn($s) => $s['cuota']['meses_deuda'] > MESES_MORA);
     $just = justificaciones_anio((int)date('Y'));
     $pasados = array_filter($socios, fn($s) => ($just[$s['id']] ?? 0) > MAX_JUSTIFICACIONES);
     $ultima = q('SELECT MAX(fecha) FROM reuniones WHERE fecha <= CURDATE()')->fetchColumn();
     $dias = $ultima ? (int)((time() - strtotime($ultima)) / 86400) : null;
 
     $out = [];
-    if ($mora) {
-        $deuda = -array_sum(array_map(fn($s) => $s['cuota']['saldo'], $mora));
-        $out[] = alerta('rojo', count($mora) . ' socio(s) con más de ' . MESES_MORA . ' meses de atraso en cuotas', 'Suman ' . clp($deuda) . '. Según el estatuto puede considerarse falta grave.', 'admin/tesoreria.php#estado');
-    }
     if ($pasados) {
         $out[] = alerta('naranja', count($pasados) . ' socio(s) superan las ' . MAX_JUSTIFICACIONES . ' justificaciones de ' . date('Y'), 'Acuerdo del 06/03/2026: máximo 3 justificaciones al año.', null, array_column($pasados, 'nombre', 'id'));
     }
@@ -154,9 +149,6 @@ function alertas_admin(): array
 function alertas_socio(array $u, ?array $ficha, array $cuota): array
 {
     $out = [];
-    if ($cuota['meses_deuda'] > MESES_MORA) {
-        $out[] = alerta('rojo', "Tienes {$cuota['meses_deuda']} cuotas pendientes", 'Según el estatuto, más de ' . MESES_MORA . ' meses de atraso puede considerarse falta grave. Ponte al día o conversa con la tesorería.');
-    }
     if (!$ficha || !$ficha['enviada']) {
         $out[] = alerta('naranja', 'Completa tu formulario de postulación', 'Es obligatorio para mantener tu cupo en el comité.', 'panel/ficha.php');
     } elseif ($faltan = ficha_faltantes(ficha_datos($u, $ficha))) {

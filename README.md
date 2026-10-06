@@ -117,7 +117,7 @@ Los socios vienen **sin clave**. Para darle acceso a alguien: *Admin → Socios 
 ## Bajas de socios
 
 - Para que alguien deje de participar **sin borrar su historial**, desmarca *Socio activo* en *Socios* e indica la **fecha de baja** (por defecto, hoy).
-- Desde esa fecha no se generan más cuotas. El mes de la baja sí se cobra, igual que el mes de ingreso. Lo que debía hasta entonces sigue apareciendo en *Tesorería*, marcado "de baja".
+- Sus pagos siguen contando en la caja y aparecen en *Tesorería*, marcados "de baja".
 - Si se reactiva, la fecha de baja se borra y vuelve a contar normalmente.
 - ¿Ya habías importado la base antes? Ejecuta `sql/migraciones/2026-09-fecha-baja.sql`.
 
@@ -128,11 +128,9 @@ Los socios vienen **sin clave**. Para darle acceso a alguien: *Admin → Socios 
 - Las reuniones **sin lista cargada**, por ejemplo una online sin registro, no cuentan como ausencia para nadie.
 - ¿Ya habías importado la base antes? Ejecuta `sql/migraciones/2026-09-asistencia-estados.sql`.
 
-## Cómo se calculan las cuotas
+## Cómo se muestran las cuotas
 
-`lo que debería haber pagado = meses desde el inicio del cobro (o desde que entró, si es posterior) × cuota mensual`
-
-El saldo es lo pagado menos eso: si da negativo, el socio debe; si da positivo, tiene saldo a favor. Los pagos se registran como montos (por ejemplo, $30.000 de una vez cubre 10 meses), igual que en la planilla. La cuota y el mes de inicio se cambian en *Tesorería → Configurar cuota mensual*.
+El sitio muestra **solo lo realmente pagado**: no proyecta lo que "debería" haber, porque no se sabe cuánto tiempo seguirá cada socio. Cada socio ve su total aportado y las **cuotas que cubre** (`total pagado ÷ cuota mensual`; $30.000 con cuota de $3.000 = 10 cuotas). Los pagos se registran como montos, igual que en la planilla. La cuota se cambia en *Tesorería → Configurar cuota mensual*.
 
 ## Notas sobre los datos importados
 

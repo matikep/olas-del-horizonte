@@ -114,9 +114,9 @@ page_start('Tesorería', 'admin/tesoreria.php');
   <h2>Estado de cuotas por socio</h2>
   <?= buscador('#tabla-estado', 'Buscar socio o RUT…') ?>
   <div class="tabla-wrap"><table id="tabla-estado">
-    <thead><tr><th>Socio</th><th class="num">Pagado</th><th class="num">Esperado</th><th>Estado</th><th></th></tr></thead>
-    <tbody><?php foreach ($socios as $s): if (!$s['activo'] && $s['cuota']['saldo'] >= 0) continue;   // de baja: solo si quedó debiendo ?>
-      <tr data-buscar="<?= e(rut_formato($s['rut'])) ?>"><td><?= e($s['nombre']) ?><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja desde ' . fecha($s['fecha_baja']) . '</span>' ?></td><td class="num"><?= clp($s['cuota']['pagado']) ?></td><td class="num"><?= clp($s['cuota']['esperado']) ?></td>
+    <thead><tr><th>Socio</th><th class="num">Pagado</th><th>Cuotas cubiertas</th><th></th></tr></thead>
+    <tbody><?php foreach ($socios as $s): if (!$s['activo'] && $s['cuota']['pagado'] <= 0) continue;   // de baja: solo si aportó ?>
+      <tr data-buscar="<?= e(rut_formato($s['rut'])) ?>"><td><?= e($s['nombre']) ?><?= $s['activo'] ? '' : ' <span class="badge neutro">de baja desde ' . fecha($s['fecha_baja']) . '</span>' ?></td><td class="num"><?= clp($s['cuota']['pagado']) ?></td>
       <td><?= badge_cuota($s['cuota']) ?></td><td class="acc"><a class="btn chico sec" href="?socio=<?= $s['id'] ?>#pagos">Ver pagos</a></td></tr>
     <?php endforeach; ?></tbody>
   </table></div>

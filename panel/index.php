@@ -4,7 +4,7 @@ require_once __DIR__ . '/../inc/alertas.php';
 
 $u = require_login();
 $pagos = q('SELECT * FROM pagos WHERE usuario_id = ? ORDER BY fecha DESC, id DESC', [$u['id']])->fetchAll();
-$c = estado_cuota($u['fecha_ingreso'], (int)array_sum(array_column($pagos, 'monto')), $u['fecha_baja']);
+$c = estado_cuota((int)array_sum(array_column($pagos, 'monto')));
 // Reuniones sin lista de asistencia cargada (ej. online sin registro) no cuentan como ausencia.
 // estado NULL = ausente. Reuniones sin lista cargada no cuentan; las justificadas no penalizan.
 $reuniones = q('SELECT r.*, a.estado,
@@ -25,10 +25,10 @@ page_start('Hola, ' . explode(' ', $u['nombre'])[0], 'panel/index.php');
 <div class="stats">
   <div class="stat destacado">
     <span>Mis cuotas</span>
-    <strong><?= $c['saldo'] >= 0 ? 'Al día' : 'Debes ' . clp(-$c['saldo']) ?></strong>
-    <small><?= $c['saldo'] > 0 ? 'Saldo a favor ' . clp($c['saldo']) : ($c['saldo'] < 0 ? $c['meses_deuda'] . ' cuota(s) pendiente(s)' : '¡Gracias por tu aporte!') ?></small>
+    <strong><?= $c['cuotas'] ?> <?= $c['cuotas'] === 1 ? 'cuota pagada' : 'cuotas pagadas' ?></strong>
+    <small>Cuota mensual <?= clp((int)ajuste('cuota_mensual')) ?></small>
   </div>
-  <div class="stat"><span>Total aportado</span><strong><?= clp($c['pagado']) ?></strong><small>de <?= clp($c['esperado']) ?> esperado (<?= $c['meses'] ?> meses × <?= clp((int)ajuste('cuota_mensual')) ?>)</small></div>
+  <div class="stat"><span>Total aportado</span><strong><?= clp($c['pagado']) ?></strong><small>¡Gracias por tu aporte!</small></div>
   <div class="stat <?= $pct >= 75 ? 'bien' : ($pct < 50 ? 'alerta' : '') ?>">
     <span>Mi asistencia</span><strong><?= $pct ?>%</strong>
     <div class="barra"><i style="width:<?= $pct ?>%"></i></div>

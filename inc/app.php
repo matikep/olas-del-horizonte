@@ -22,7 +22,6 @@ const CAUSALES = [
     'ninguna' => 'No cumple ninguna causal',
 ];
 const MAX_SUBIDA = 15 * 1024 * 1024;
-const MESES_MORA = 2;   // estatuto: más de 2 meses de atraso puede considerarse falta grave
 // Asistencia: sin fila = ausente. Representante cuenta como asistencia; justificado no penaliza.
 const ESTADOS_ASISTENCIA = ['presente' => 'Presente', 'representante' => 'Representante', 'justificado' => 'Justificado'];
 const MAX_JUSTIFICACIONES = 3;   // acuerdo 06/03/2026: máximo 3 justificaciones al año
@@ -238,24 +237,12 @@ function rut_formato(?string $rut): string
 }
 
 // ---------- Cuotas ----------
-// ponytail: cuota única vigente aplicada a todos los meses; si la cuota cambia en el tiempo, agregar tabla de tramos.
-// Cuenta desde el mes de ingreso (o inicio del cobro) hasta hoy, o hasta el mes de la baja si el socio está inactivo.
-function estado_cuota(string $fechaIngreso, int $pagado, ?string $fechaBaja = null): array
+// Solo lo realmente pagado: no se proyecta lo que "debería" haber, porque no se sabe cuánto tiempo seguirá un socio.
+// Cuotas cubiertas = monto pagado ÷ cuota mensual (la cuota única vigente se aplica a todo).
+function estado_cuota(int $pagado): array
 {
     $cuota = (int)ajuste('cuota_mensual', '3000');
-    $inicio = max(ajuste('inicio_cobro', '2025-03-01'), $fechaIngreso);
-    $hasta = $fechaBaja ? min($fechaBaja, date('Y-m-d')) : date('Y-m-d');
-    $mesesDesde = fn(string $d) => (int)date('Y', strtotime($d)) * 12 + (int)date('n', strtotime($d));
-    $meses = max(0, $mesesDesde($hasta) - $mesesDesde($inicio) + 1);
-    $esperado = $meses * $cuota;
-    $saldo = $pagado - $esperado;
-    return [
-        'meses' => $meses,
-        'esperado' => $esperado,
-        'pagado' => $pagado,
-        'saldo' => $saldo,
-        'meses_deuda' => $saldo < 0 && $cuota > 0 ? (int)ceil(-$saldo / $cuota) : 0,
-    ];
+    return ['pagado' => $pagado, 'cuotas' => $cuota > 0 ? intdiv($pagado, $cuota) : 0];
 }
 
 function socios_con_pagos(bool $soloActivos = true): array
@@ -263,15 +250,13 @@ function socios_con_pagos(bool $soloActivos = true): array
     $rows = q('SELECT u.*, COALESCE(SUM(p.monto),0) AS pagado FROM usuarios u
                LEFT JOIN pagos p ON p.usuario_id = u.id ' . ($soloActivos ? 'WHERE u.activo = 1 ' : '') .
                'GROUP BY u.id ORDER BY u.nombre')->fetchAll();
-    return array_map(fn($u) => $u + ['cuota' => estado_cuota($u['fecha_ingreso'], (int)$u['pagado'], $u['fecha_baja'])], $rows);
+    return array_map(fn($u) => $u + ['cuota' => estado_cuota((int)$u['pagado'])], $rows);
 }
 
 function badge_cuota(array $c): string
 {
-    if ($c['saldo'] >= 0) {
-        return '<span class="badge ok">Al día' . ($c['saldo'] > 0 ? ' · a favor ' . clp($c['saldo']) : '') . '</span>';
-    }
-    return '<span class="badge ' . ($c['meses_deuda'] > MESES_MORA ? 'falta' : 'warn') . '">Debe ' . clp(-$c['saldo']) . ' · ' . $c['meses_deuda'] . ' ' . ($c['meses_deuda'] === 1 ? 'mes' : 'meses') . '</span>';
+    if ($c['pagado'] <= 0) return '<span class="badge neutro">Sin pagos</span>';
+    return '<span class="badge ok">' . $c['cuotas'] . ' ' . ($c['cuotas'] === 1 ? 'cuota' : 'cuotas') . ' · ' . clp($c['pagado']) . '</span>';
 }
 
 // Justificaciones por socio en un año: [usuario_id => cantidad]. $excluirReunion evita contar la que se está editando.
